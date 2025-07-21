@@ -2,64 +2,93 @@
 
 namespace Modules\Language\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Core\Exceptions\DurrbarException;
+use Modules\Core\Http\Controllers\CoreController;
+use Modules\Language\Http\Requests\LanguageRequest;
+use Modules\Language\Models\Language;
+use Modules\Language\Repositories\LanguageRepository;
+use Prettus\Validator\Exceptions\ValidatorException;
 
-class LanguageController extends Controller
+class LanguageController extends CoreController
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public $repository;
+
+    public function __construct(LanguageRepository $repository)
     {
-        return view('language::index');
+        $this->repository = $repository;
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Display a listing of the resource.
+     *
+     * @return Collection|Language[]
      */
-    public function create()
+    public function index(Request $request)
     {
-        return view('language::create');
+        return $this->repository->get();
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @return mixed
+     *
+     * @throws ValidatorException
      */
-    public function store(Request $request)
+    public function store(LanguageRequest $request)
     {
-        //
+        try {
+            return $this->repository->create($request->validated());
+        } catch (DurrbarException $e) {
+            throw new DurrbarException(COULD_NOT_CREATE_THE_RESOURCE);
+        }
     }
 
     /**
-     * Show the specified resource.
+     * Display the specified resource.
+     *
+     * @param  $slug
+     * @return JsonResponse
      */
-    public function show($id)
+    public function show(Request $request, $params)
     {
-        return view('language::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('language::edit');
+        try {
+            return $this->repository->where('id', $params)->firstOrFail();
+        } catch (DurrbarException $e) {
+            throw new DurrbarException(NOT_FOUND);
+        }
     }
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param  int  $id
+     * @return JsonResponse
      */
-    public function update(Request $request, $id)
+    public function update(LanguageRequest $request, $id)
     {
-        //
+        try {
+            return $this->repository->findOrFail($id)->update($request->validated());
+        } catch (DurrbarException $e) {
+            throw new DurrbarException(COULD_NOT_UPDATE_THE_RESOURCE);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return JsonResponse
      */
     public function destroy($id)
     {
-        //
+        try {
+            return $this->repository->findOrFail($id)->delete();
+        } catch (DurrbarException $e) {
+            throw new DurrbarException(NOT_FOUND);
+        }
     }
 }
